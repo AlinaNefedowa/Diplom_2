@@ -11,6 +11,7 @@ import utils.UserClient;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.notNullValue;
 
 public class UpdateUserTest {
     private UserClient userClient = new UserClient();
@@ -32,9 +33,9 @@ public class UpdateUserTest {
     }
 
     @Test
-    @Description("Изменение данных с авторизацией")
+    @Description("Изменение имени пользователя с авторизацией")
     void updateUserWithAuthorization() {
-        User updatedUser = new User(randomEmail(), null, "UpdatedName");
+        User updatedUser = new User(originalUser.getEmail(), originalUser.getPassword(), "UpdatedName");
         userClient.update(updatedUser, accessToken)
                 .then().statusCode(200)
                 .body("success", equalTo(true))
@@ -44,10 +45,37 @@ public class UpdateUserTest {
     @Test
     @Description("Попытка изменить данные без авторизации")
     void updateUserWithoutAuthorization() {
-        User updatedUser = new User(randomEmail(), null, "UpdatedName");
+        User updatedUser = new User(originalUser.getEmail(), originalUser.getPassword(), "UpdatedName");
         userClient.update(updatedUser, null)
                 .then().statusCode(401)
                 .body("message", equalTo("You should be authorised"));
+    }
+
+    @Test
+    @Description("Изменение email пользователя с авторизацией")
+    void updateUserEmailWithAuthorization() {
+        String newEmail = randomEmail();
+        User updatedUser = new User(newEmail, originalUser.getPassword(), originalUser.getName());
+        userClient.update(updatedUser, accessToken)
+                .then().statusCode(200)
+                .body("success", equalTo(true))
+                .body("user.email", equalTo(newEmail.toLowerCase()));
+    }
+
+    @Test
+    @Description("Изменение пароля пользователя с авторизацией")
+    void updateUserPasswordWithAuthorization() {
+        String newPassword = "newPassword123";
+        User updatedUser = new User(originalUser.getEmail(), newPassword, originalUser.getName());
+        userClient.update(updatedUser, accessToken)
+                .then().statusCode(200)
+                .body("success", equalTo(true))
+                .body("user.email", notNullValue());
+
+
+        userClient.login(originalUser.getEmail(), newPassword)
+                .then().statusCode(200)
+                .body("success", equalTo(true));
     }
 
     private String randomEmail() {
